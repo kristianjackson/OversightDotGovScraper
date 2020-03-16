@@ -3,9 +3,11 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
 import time
 import os
+import pandas as pd
+import random
 
-URL = 'https://www.oversight.gov/reports?field_address_country=AA&field_type_of_product[0]=9&field_component_agency_[0]=395&items_per_page=60'
-DOWNLOAD_PATH = "C:\\Users\\kristian.jackson\\Downloads\\Reports"
+# DOWNLOAD_PATH = "C:\\Users\\kristian.jackson\\Downloads\\Reports"
+DOWNLOAD_PATH = os.getcwd() + '\\DOWNLOADS'
 
 
 def download_wait(path_to_downloads):
@@ -27,13 +29,16 @@ def download_reports(report_names):
         report_driver.get(report_name.get_attribute('href'))
         file_link = report_driver.find_element_by_css_selector('span.file a')
         print('Downloading...' + file_link.get_attribute('href'))
+        time.sleep(random.randint(1, 3))
         report_driver.get(file_link.get_attribute('href'))
     download_wait(DOWNLOAD_PATH)
     report_driver.quit()
 
 
+print(DOWNLOAD_PATH)
+
 chrome_options = Options()
-chrome_options.add_argument("--headless")
+# chrome_options.add_argument("--headless")
 chrome_options.add_experimental_option(
     'prefs', {
         "download.default_directory": DOWNLOAD_PATH,
@@ -42,23 +47,34 @@ chrome_options.add_experimental_option(
         "plugins.always_open_pdf_externally": True
     })
 
-driver = webdriver.Chrome(options=chrome_options)
+agency_list = pd.read_csv('AgencyListing.csv')
 
-print('Starting Scrape')
-driver.get(URL)
-while True:
-    report_names = driver.find_elements_by_css_selector(
-        'td.st-val.views-field.views-field-title a')
-    download_reports(report_names)
-    try:
-        next_page = driver.find_element_by_css_selector('li.pager-next a')
-        print(next_page)
-        driver.get(next_page.get_attribute('href'))
+print('Read in list of ' + str(len(agency_list)) + ' agencies')
+
+for agency in agency_list['Agency Number'].tolist():
+
+    print("Scraping agency number " + str(agency))
+
+    URL = 'https://www.oversight.gov/reports?field_address_country=AA&field_type_of_product[0]=9&field_component_agency_[0]=' + str(
+        agency) + '&items_per_page=60'
+
+    driver = webdriver.Chrome(options=chrome_options)
+
+    print('Starting Scrape')
+    driver.get(URL)
+    while True:
         report_names = driver.find_elements_by_css_selector(
             'td.st-val.views-field.views-field-title a')
         download_reports(report_names)
-    except:
-        print('Finished downloading reports')
-        break
+        try:
+            next_page = driver.find_element_by_css_selector('li.pager-next a')
+            print(next_page)
+            driver.get(next_page.get_attribute('href'))
+            report_names = driver.find_elements_by_css_selector(
+                'td.st-val.views-field.views-field-title a')
+            download_reports(report_names)
+        except:
+            print('Finished downloading reports')
+            break
 
-driver.quit()
+    driver.quit()
