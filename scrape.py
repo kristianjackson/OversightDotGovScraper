@@ -41,7 +41,7 @@ def download_reports(agency, report_names):
 print(DOWNLOAD_PATH)
 
 chrome_options = Options()
-# chrome_options.add_argument("--headless")
+chrome_options.add_argument("--headless")
 chrome_options.add_experimental_option(
     'prefs', {
         "download.default_directory": DOWNLOAD_PATH,
