@@ -22,16 +22,19 @@ def download_wait(path_to_downloads):
         seconds += 1
 
 
-def download_reports(report_names):
+def download_reports(agency, report_names):
+    f = open("download_log.csv", "a+")
     report_driver = webdriver.Chrome(options=chrome_options)
     print(str(len(report_names)) + ' results found')
     for report_name in report_names:
         report_driver.get(report_name.get_attribute('href'))
         file_link = report_driver.find_element_by_css_selector('span.file a')
         print('Downloading...' + file_link.get_attribute('href'))
+        f.write(str(agency) + ', ' + file_link.get_attribute('href') + '\n')
         time.sleep(random.randint(1, 3))
         report_driver.get(file_link.get_attribute('href'))
     download_wait(DOWNLOAD_PATH)
+    f.close()
     report_driver.quit()
 
 
@@ -65,14 +68,14 @@ for agency in agency_list['Agency Number'].tolist():
     while True:
         report_names = driver.find_elements_by_css_selector(
             'td.st-val.views-field.views-field-title a')
-        download_reports(report_names)
+        download_reports(agency, report_names)
         try:
             next_page = driver.find_element_by_css_selector('li.pager-next a')
             print(next_page)
             driver.get(next_page.get_attribute('href'))
             report_names = driver.find_elements_by_css_selector(
                 'td.st-val.views-field.views-field-title a')
-            download_reports(report_names)
+            download_reports(agency, report_names)
         except:
             print('Finished downloading reports')
             break
